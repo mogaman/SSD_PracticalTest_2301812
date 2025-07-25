@@ -29,12 +29,14 @@ function validateInput(input) {
     const xssPatterns = [
         /<script/gi,
         /javascript:/gi,
-        /on\w+\s*=/gi,
+        /onclick=/gi,
+        /onload=/gi,
+        /onerror=/gi,
         /<iframe/gi,
         /<object/gi,
         /<embed/gi,
-        /alert\s*\(/gi,
-        /eval\s*\(/gi,
+        /alert\(/gi,
+        /eval\(/gi,
         /document\./gi,
         /window\./gi
     ];

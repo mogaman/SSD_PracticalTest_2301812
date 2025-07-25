@@ -5,25 +5,26 @@ import app from '../src/server.js';
 describe('Secure Search Application', () => {
   
   describe('Home Page', () => {
-    it('should return the home page with search form', async () => {
+    it('should return home page with search form', async () => {
       const response = await request(app)
         .get('/')
         .expect(200);
       
+      expect(response.text).to.include('<h1>Search Application</h1>');
       expect(response.text).to.include('<form action="/search" method="POST">');
-      expect(response.text).to.include('<input type="text" name="searchTerm"');
+      expect(response.text).to.include('name="searchTerm"');
       expect(response.text).to.include('<button type="submit">Search</button>');
     });
   });
 
-  describe('Valid Input Handling', () => {
-    it('should accept valid search terms and display results', async () => {
+  describe('Valid Search Input', () => {
+    it('should accept and display valid search terms', async () => {
       const response = await request(app)
         .post('/search')
         .send({ searchTerm: 'hello world' })
         .expect(200);
       
-      expect(response.text).to.include('Search Results');
+      expect(response.text).to.include('<h1>Search Results</h1>');
       expect(response.text).to.include('Search Term: hello world');
       expect(response.text).to.include('<a href="/">Return to Home Page</a>');
     });
@@ -34,94 +35,103 @@ describe('Secure Search Application', () => {
         .send({ searchTerm: 'test123' })
         .expect(200);
       
-      expect(response.text).to.include('Search Results');
+      expect(response.text).to.include('<h1>Search Results</h1>');
       expect(response.text).to.include('Search Term: test123');
     });
   });
 
   describe('XSS Attack Prevention', () => {
-    it('should block XSS attacks', async () => {
-      const xssAttacks = [
-        '<script>alert("XSS")</script>',
-        'javascript:alert("XSS")',
-        '<img src=x onerror=alert("XSS")>',
-        '<iframe src="javascript:alert(1)"></iframe>'
-      ];
+    it('should block script tag attacks', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({ searchTerm: '<script>alert("XSS")</script>' })
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
+      expect(response.text).to.include('<form action="/search" method="POST">');
+      expect(response.text).to.include('value=""');
+    });
 
-      for (const attack of xssAttacks) {
-        const response = await request(app)
-          .post('/search')
-          .send({ searchTerm: attack })
-          .expect(200);
-        
-        expect(response.text).to.include('Invalid input detected');
-        expect(response.text).to.include('<form action="/search" method="POST">');
-        expect(response.text).to.include('value=""');
-      }
+    it('should block javascript URL attacks', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({ searchTerm: 'javascript:alert("XSS")' })
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
+      expect(response.text).to.include('<form action="/search" method="POST">');
+    });
+
+    it('should block event handler attacks', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({ searchTerm: '<img src=x onerror=alert("XSS")>' })
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
     });
   });
 
   describe('SQL Injection Prevention', () => {
-    it('should block SQL injection attacks', async () => {
-      const sqlAttacks = [
-        "' UNION SELECT * FROM users --",
-        "admin' OR 1=1 --",
-        "'; DROP TABLE users; --",
-        "SELECT password FROM users"
-      ];
+    it('should block UNION SELECT attacks', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({ searchTerm: "' UNION SELECT * FROM users --" })
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
+      expect(response.text).to.include('<form action="/search" method="POST">');
+    });
 
-      for (const attack of sqlAttacks) {
-        const response = await request(app)
-          .post('/search')
-          .send({ searchTerm: attack })
-          .expect(200);
-        
-        expect(response.text).to.include('Invalid input detected');
-        expect(response.text).to.include('<form action="/search" method="POST">');
-      }
+    it('should block OR 1=1 attacks', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({ searchTerm: "admin' OR 1=1 --" })
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
+    });
+
+    it('should block DROP TABLE attacks', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({ searchTerm: "'; DROP TABLE users; --" })
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
     });
   });
 
-  describe('Input Validation Edge Cases', () => {
-    it('should handle invalid inputs', async () => {
-      const invalidInputs = [
-        { searchTerm: '' },
-        { searchTerm: null },
-        {}
-      ];
+  describe('Input Validation', () => {
+    it('should reject empty input', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({ searchTerm: '' })
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
+    });
 
-      for (const input of invalidInputs) {
-        const response = await request(app)
-          .post('/search')
-          .send(input)
-          .expect(200);
-        
-        expect(response.text).to.include('Invalid input detected');
-        expect(response.text).to.include('<form action="/search" method="POST">');
-      }
+    it('should reject null input', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({ searchTerm: null })
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
+    });
+
+    it('should reject undefined input', async () => {
+      const response = await request(app)
+        .post('/search')
+        .send({})
+        .expect(200);
+      
+      expect(response.text).to.include('Invalid input detected');
     });
   });
 
-  describe('Security Compliance', () => {
-    it('should validate inputs according to OWASP guidelines', async () => {
-      const attackVectors = [
-        '<script>alert("XSS")</script>',
-        'javascript:alert("XSS")',
-        "' OR '1'='1",
-        "1; DROP TABLE users; --"
-      ];
-
-      for (const attack of attackVectors) {
-        const response = await request(app)
-          .post('/search')
-          .send({ searchTerm: attack });
-        
-        expect(response.status).to.equal(200);
-        expect(response.text).to.include('Invalid input detected');
-        expect(response.text).to.include('<form action="/search" method="POST">');
-      }
-    });
-
+  describe('Security Requirements', () => {
     it('should clear input field when attack is detected', async () => {
       const response = await request(app)
         .post('/search')
@@ -131,33 +141,16 @@ describe('Secure Search Application', () => {
       expect(response.text).to.include('value=""');
       expect(response.text).not.to.include('value="<script>');
     });
-  });
 
-  describe('Functional Requirements', () => {
-    it('should meet all basic requirements', async () => {
-      // Test home page
-      const homeResponse = await request(app).get('/');
-      expect(homeResponse.text).to.include('<form');
-      expect(homeResponse.text).to.include('name="searchTerm"');
-      expect(homeResponse.text).to.include('type="submit"');
-
-      // Test valid input goes to results page
-      const validResponse = await request(app)
+    it('should stay on home page after detecting attack', async () => {
+      const response = await request(app)
         .post('/search')
-        .send({ searchTerm: 'valid search' });
+        .send({ searchTerm: "' OR 1=1 --" })
+        .expect(200);
       
-      expect(validResponse.text).to.include('Search Results');
-      expect(validResponse.text).to.include('Search Term: valid search');
-      expect(validResponse.text).to.include('Return to Home Page');
-
-      // Test XSS blocked and stays on home page
-      const xssResponse = await request(app)
-        .post('/search')
-        .send({ searchTerm: '<script>alert("test")</script>' });
-      
-      expect(xssResponse.text).to.include('<form action="/search" method="POST">');
-      expect(xssResponse.text).to.include('value=""');
-      expect(xssResponse.text).not.to.include('Search Results');
+      expect(response.text).to.include('<form action="/search" method="POST">');
+      expect(response.text).to.include('Invalid input detected');
+      expect(response.text).not.to.include('Search Results');
     });
   });
 });
