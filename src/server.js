@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express';
 const app = express();
 const PORT = 80;
 
@@ -12,7 +12,16 @@ app.use(express.urlencoded({ extended: true }));
  * @returns {object} - Validation result with isValid boolean and attackType
  */
 function validateInput(input) {
-    if (!input || typeof input !== 'string') {
+    // More careful input validation
+    if (input === null || input === undefined) {
+        return { isValid: false, attackType: 'invalid' };
+    }
+    
+    if (typeof input !== 'string') {
+        return { isValid: false, attackType: 'invalid' };
+    }
+    
+    if (input.trim() === '') {
         return { isValid: false, attackType: 'invalid' };
     }
 
@@ -30,14 +39,15 @@ function validateInput(input) {
         /window\./gi
     ];
 
-    // Check for SQL injection patterns
+    // Check for SQL injection patterns - simplified and more precise
     const sqlPatterns = [
-        /(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|UNION|DECLARE)/gi,
-        /('|;|--|\/\*|\*\/)/gi,
-        /(OR|AND)\s+['"]*\d+['"]*\s*=\s*['"]*\d+['"]*\s*(--)?/gi,
-        /1\s*=\s*1/gi,
-        /'.*OR.*'/gi,
-        /".*OR.*"/gi
+        /\bUNION\s+SELECT\b/gi,
+        /\bDROP\s+TABLE\b/gi,
+        /'\s*OR\s+'\d+'\s*=\s*'\d+'/gi,
+        /'\s*OR\s+\d+\s*=\s*\d+/gi,
+        /admin'\s*OR\s*\d+\s*=\s*\d+/gi,
+        /--\s*$/gi,
+        /;\s*(DROP|DELETE|UPDATE|INSERT)\b/gi
     ];
 
     // Test for XSS patterns
@@ -113,4 +123,4 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-module.exports = app;
+export default app;
