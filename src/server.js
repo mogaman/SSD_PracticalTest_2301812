@@ -2,6 +2,9 @@ import express from 'express';
 const app = express();
 const PORT = 80;
 
+// Security: Disable Express version disclosure
+app.disable('x-powered-by');
+
 // Middleware for parsing form data
 app.use(express.urlencoded({ extended: true }));
 
