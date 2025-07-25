@@ -1,15 +1,19 @@
 import js from "@eslint/js";
 import globals from "globals";
-import { defineConfig } from "eslint/config";
 
-export default defineConfig([
-  // Only check the server.js file
-  { 
-    files: ["src/server.js"], 
-    plugins: { js }, 
-    extends: ["js/recommended"], 
-    languageOptions: { 
-      globals: globals.node  // Use Node.js globals for server file
+export default [
+  // Apply recommended rules to server.js
+  {
+    files: ["src/server.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...globals.node
+      }
+    },
+    rules: {
+      ...js.configs.recommended.rules
     }
   }
-]);
+];
