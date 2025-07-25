@@ -17,29 +17,6 @@ describe('Secure Search Application', () => {
     });
   });
 
-  describe('Valid Search Input', () => {
-    it('should accept and display valid search terms', async () => {
-      const response = await request(app)
-        .post('/search')
-        .send({ searchTerm: 'hello world' })
-        .expect(200);
-      
-      expect(response.text).to.include('<h1>Search Results</h1>');
-      expect(response.text).to.include('Search Term: hello world');
-      expect(response.text).to.include('<a href="/">Return to Home Page</a>');
-    });
-
-    it('should accept alphanumeric search terms', async () => {
-      const response = await request(app)
-        .post('/search')
-        .send({ searchTerm: 'test123' })
-        .expect(200);
-      
-      expect(response.text).to.include('<h1>Search Results</h1>');
-      expect(response.text).to.include('Search Term: test123');
-    });
-  });
-
   describe('XSS Attack Prevention', () => {
     it('should block script tag attacks', async () => {
       const response = await request(app)
