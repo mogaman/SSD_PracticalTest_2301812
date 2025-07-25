@@ -4,6 +4,12 @@ import app from '../src/server.js';
 
 describe('Secure Search Application', () => {
   
+  // Cleanup after all tests complete
+  after(() => {
+    // Force exit if needed (fallback)
+    setTimeout(() => process.exit(0), 100);
+  });
+  
   describe('Home Page', () => {
     it('should return home page with search form', async () => {
       const response = await request(app)

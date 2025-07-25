@@ -123,9 +123,11 @@ app.post('/search', (req, res) => {
     `);
 });
 
-// Start the server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Start the server only if this file is run directly (not imported for testing)
+if (import.meta.url === `file://${process.argv[1]}`) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
 
 export default app;
