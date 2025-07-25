@@ -1,14 +1,8 @@
-import { expect } from 'chai';
-import request from 'supertest';
-import app from '../src/server.js';
+const { expect } = require('chai');
+const request = require('supertest');
+const app = require('../src/server.js');
 
 describe('Secure Search Application', () => {
-  
-  // Cleanup after all tests complete
-  after(() => {
-    // Force exit if needed (fallback)
-    setTimeout(() => process.exit(0), 100);
-  });
   
   describe('Home Page', () => {
     it('should return home page with search form', async () => {
